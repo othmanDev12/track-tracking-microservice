@@ -1,19 +1,17 @@
 package main
 
 import (
-	"fmt"
+	"github.com/gorilla/websocket"
+	"github.com/track-tracking/types"
+	"log"
 	"math"
 	"math/rand"
 	"time"
 )
 
-const sendInterval = 60
+const socketConnection = "ws://127.0.0.1:30000/ws"
 
-type OBUData struct {
-	OBUID     int     `json:"obuid"`
-	Latitude  float64 `json:"latitude"`
-	Longitude float64 `json:"longitude"`
-}
+const sendInterval = 60
 
 func generateCordinate() float64 {
 	number := float64(rand.Intn(100) + 1)
@@ -27,15 +25,24 @@ func generateLatitudeAndLangitude() (float64, float64) {
 
 func main() {
 	obuids := generateOBUIds(20)
+
+	conn, _, err := websocket.DefaultDialer.Dial(socketConnection, nil)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	for {
 		for i := 0; i < len(obuids); i++ {
 			latitude, longituide := generateLatitudeAndLangitude()
-			data := OBUData{
+			data := types.OBUData{
 				OBUID:     obuids[i],
 				Latitude:  latitude,
 				Longitude: longituide,
 			}
-			fmt.Printf("%+v\n", data)
+			if err := conn.WriteJSON(data); err != nil {
+				log.Fatal(err)
+			}
 		}
 		time.Sleep(sendInterval * time.Second)
 	}
