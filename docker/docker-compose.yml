@@ -1,32 +1,35 @@
-version: '3'
-
+version: '3.8'
 services:
-  zookeeper:
-    image: zookeeper:3.4.9
-    hostname: zookeeper
-    ports:
-      - "2181:2181"
-    environment:
-      ZOO_MY_ID: 1
-      ZOO_PORT: 2181
-      ZOO_SERVERS: server.1=zookeeper:2888:3888
-    volumes:
-      - ./data/zookeeper/data:/data
-      - ./data/zookeeper/datalog:/datalog
-
-  kafka2:
-    image: confluentinc/cp-kafka:5.3.0
-    hostname: kafka2
+  redpanda:
+    # NOTE: Please use the latest version here!
+    image: docker.redpanda.com/vectorized/redpanda
+    container_name: redpanda
     ports:
       - "9092:9092"
+      - "29092:29092"
+    command:
+      - redpanda
+      - start
+      - --smp
+      - '1'
+      - --reserve-memory
+      - 0M
+      - --overprovisioned
+      - --node-id
+      - '0'
+      - --kafka-addr
+      - PLAINTEXT://0.0.0.0:29092,OUTSIDE://0.0.0.0:9092
+      - --advertise-kafka-addr
+      - PLAINTEXT://redpanda:29092,OUTSIDE://localhost:9092
+    restart: unless-stopped
+
+  kafka-console:
+    image: docker.redpanda.com/vectorized/console
+    container_name: kafka-console
+    ports:
+      - "8080:8080"
     environment:
-      KAFKA_ADVERTISED_LISTENERS: LISTENER_DOCKER_INTERNAL://kafka2:19092,LISTENER_DOCKER_EXTERNAL://${DOCKER_HOST_IP:-127.0.0.1}:9092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: LISTENER_DOCKER_INTERNAL:PLAINTEXT,LISTENER_DOCKER_EXTERNAL:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: LISTENER_DOCKER_INTERNAL
-      KAFKA_ZOOKEEPER_CONNECT: "zookeeper:2181"
-      KAFKA_BROKER_ID: 2
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-    volumes:
-      - ./data/kafka2/data:/var/lib/kafka/data
+      - KAFKA_BROKERS=redpanda:29092
     depends_on:
-      - zookeeper
+      - redpanda
+    restart: always
