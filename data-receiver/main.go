@@ -9,8 +9,6 @@ import (
 	"github.com/track-tracking/types"
 )
 
-var KafkaTopic = "obudata"
-
 func main() {
 	recv, err := NewDataReceiver()
 	if err != nil {
@@ -25,10 +23,11 @@ func main() {
 
 func NewDataReceiver() (*DataReceiver, error) {
 	var (
-		p   DataProducer
-		err error
+		p          DataProducer
+		err        error
+		kafkaTopic = "obudata"
 	)
-	p, err = NewKafkaProducer()
+	p, err = NewKafkaProducer(kafkaTopic)
 	if err != nil {
 		return nil, err
 	}
