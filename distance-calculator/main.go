@@ -5,7 +5,11 @@ import "log"
 const kafkaTopic = "obudata"
 
 func main() {
-	kafkaConsumer, err := NewKafkaConsumer(kafkaTopic)
+
+	var calcServicer CalculatorServicer
+	calcServicer = NewCalculatorService()
+
+	kafkaConsumer, err := NewKafkaConsumer(kafkaTopic, calcServicer)
 	if err != nil {
 		log.Fatal(err)
 	}

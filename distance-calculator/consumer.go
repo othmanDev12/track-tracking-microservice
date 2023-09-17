@@ -2,16 +2,19 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/sirupsen/logrus"
+	"github.com/track-tracking/types"
 )
 
 type DataConsumer struct {
-	consumer  *kafka.Consumer
-	isRunning bool
+	consumer    *kafka.Consumer
+	isRunning   bool
+	calcService CalculatorServicer
 }
 
-func NewKafkaConsumer(topic string) (*DataConsumer, error) {
+func NewKafkaConsumer(topic string, calcServicer CalculatorServicer) (*DataConsumer, error) {
 	c, err := kafka.NewConsumer(&kafka.ConfigMap{
 		"bootstrap.servers": "localhost",
 		"group.id":          "myGroup",
@@ -22,7 +25,8 @@ func NewKafkaConsumer(topic string) (*DataConsumer, error) {
 		return nil, err
 	}
 	return &DataConsumer{
-		consumer: c,
+		consumer:    c,
+		calcService: calcServicer,
 	}, nil
 
 }
@@ -39,11 +43,17 @@ func (c *DataConsumer) ReadMessageLoop() {
 			logrus.Errorf("kafka consume error: %s", err)
 			continue
 		}
-		obuData, err := json.Marshal(msg)
+		var obudata types.OBUData
+		err = json.Unmarshal(msg.Value, &obudata)
 		if err != nil {
-			logrus.Errorf("error while marshalling data: %s", err)
+			logrus.Errorf("error while unmarshalling data: %s", err)
+			continue
 		}
-		logrus.Infof("consumed data: %s", obuData)
-
+		distance, err := c.calcService.CalculateDistance(obudata)
+		if err != nil {
+			logrus.Errorf("error while calculating distances: %s", err)
+			continue
+		}
+		fmt.Printf("calculating distance %.2f\n", distance)
 	}
 }
