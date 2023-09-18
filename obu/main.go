@@ -11,7 +11,7 @@ import (
 
 const socketConnection = "ws://127.0.0.1:30000/ws"
 
-const sendInterval = 60
+const sendInterval = time.Second * 5
 
 func generateCordinate() float64 {
 	number := float64(rand.Intn(100) + 1)
@@ -44,7 +44,7 @@ func main() {
 				log.Fatal(err)
 			}
 		}
-		time.Sleep(sendInterval * time.Second)
+		time.Sleep(sendInterval)
 	}
 }
 

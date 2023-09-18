@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/sirupsen/logrus"
 	"github.com/track-tracking/types"
@@ -54,6 +53,6 @@ func (c *DataConsumer) ReadMessageLoop() {
 			logrus.Errorf("error while calculating distances: %s", err)
 			continue
 		}
-		fmt.Printf("calculating distance %.2f\n", distance)
+		_ = distance
 	}
 }
