@@ -1,15 +1,21 @@
 package main
 
-import "log"
+import (
+	"github.com/track-tracking/aggregator/client"
+	"log"
+)
 
-const kafkaTopic = "obudata"
+const (
+	kafkaTopic        = "obudata"
+	aggregatorEnpoint = "http://localhost:3000/aggregate"
+)
 
 func main() {
 
 	var calcServicer CalculatorServicer
 	calcServicer = NewCalculatorService()
 	calcServicer = NewLogMiddleware(calcServicer)
-	kafkaConsumer, err := NewKafkaConsumer(kafkaTopic, calcServicer)
+	kafkaConsumer, err := NewKafkaConsumer(kafkaTopic, calcServicer, client.NewClient(aggregatorEnpoint))
 	if err != nil {
 		log.Fatal(err)
 	}

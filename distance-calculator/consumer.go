@@ -4,16 +4,19 @@ import (
 	"encoding/json"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/sirupsen/logrus"
+	"github.com/track-tracking/aggregator/client"
 	"github.com/track-tracking/types"
+	"time"
 )
 
 type DataConsumer struct {
 	consumer    *kafka.Consumer
 	isRunning   bool
 	calcService CalculatorServicer
+	aggClient   *client.Client
 }
 
-func NewKafkaConsumer(topic string, calcServicer CalculatorServicer) (*DataConsumer, error) {
+func NewKafkaConsumer(topic string, calcServicer CalculatorServicer, aggClient *client.Client) (*DataConsumer, error) {
 	c, err := kafka.NewConsumer(&kafka.ConfigMap{
 		"bootstrap.servers": "localhost",
 		"group.id":          "myGroup",
@@ -26,6 +29,7 @@ func NewKafkaConsumer(topic string, calcServicer CalculatorServicer) (*DataConsu
 	return &DataConsumer{
 		consumer:    c,
 		calcService: calcServicer,
+		aggClient:   aggClient,
 	}, nil
 
 }
@@ -53,6 +57,14 @@ func (c *DataConsumer) ReadMessageLoop() {
 			logrus.Errorf("error while calculating distances: %s", err)
 			continue
 		}
-		_ = distance
+		req := types.Distance{
+			Value: distance,
+			Unix:  time.Now().UnixNano(),
+			OBUId: obudata.OBUID,
+		}
+		if err := c.aggClient.AggregateInvoice(req); err != nil {
+			logrus.Errorf("error while aggregating inventory: %s", err)
+			continue
+		}
 	}
 }
