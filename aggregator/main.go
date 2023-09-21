@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"flag"
+	"fmt"
 	"github.com/track-tracking/types"
 	"log"
 	"net/http"
@@ -11,12 +12,16 @@ import (
 func main() {
 	listenAddress := flag.String("listenAddress", ":3000", "the listen address of the Http Server")
 	flag.Parse()
-	store := NewMemoryStore()
-	svc := NewAggregateService(store)
+	var (
+		store = NewMemoryStore()
+		svc   = NewAggregateService(store)
+	)
+	svc = NewLogMiddlware(svc)
 	makeHttpTransport(*listenAddress, svc)
 }
 
 func makeHttpTransport(listenAddress string, aggregator Aggregator) {
+	fmt.Println("the HTTP Transport should be on port ", listenAddress)
 	http.HandleFunc("/aggregate", handleAggregate(aggregator))
 	err := http.ListenAndServe(listenAddress, nil)
 	if err != nil {
