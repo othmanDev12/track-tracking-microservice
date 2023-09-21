@@ -28,8 +28,24 @@ func handleAggregate(aggregator Aggregator) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var distance types.Distance
 		if err := json.NewDecoder(r.Body).Decode(&distance); err != nil {
-			w.WriteHeader(http.StatusBadRequest)
+			err := writeJson(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+			if err != nil {
+				return
+			}
+			return
+		}
+		if err := aggregator.AggregateDistance(distance); err != nil {
+			err := writeJson(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+			if err != nil {
+				return
+			}
 			return
 		}
 	}
+}
+
+func writeJson(w http.ResponseWriter, status int, v any) error {
+	w.WriteHeader(status)
+	w.Header().Set("Content-Type", "application/json")
+	return json.NewEncoder(w).Encode(v)
 }
